@@ -1,5 +1,5 @@
 /**
- * S3 Service - File upload and management
+ * S3 Service - File upload and management with Presigned URLs
  */
 const {
     PutObjectCommand,
@@ -12,7 +12,38 @@ const path = require('path');
 const fs = require('fs');
 
 /**
- * Upload file to S3
+ * Generate presigned URL for direct upload from browser
+ * @param {string} fileName - Original file name
+ * @param {string} folder - Folder in S3 bucket (pdfs, videos, thumbnails)
+ * @param {string} contentType - MIME type of the file
+ * @returns {Object} Presigned URL and file key
+ */
+const getUploadPresignedUrl = async (fileName, folder, contentType) => {
+    const fileExtension = path.extname(fileName);
+    const key = `${folder}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+
+    const command = new PutObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: key,
+        ContentType: contentType
+    });
+
+    // URL expires in 15 minutes
+    const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+
+    // Construct the public URL
+    const publicUrl = `https://${S3_BUCKET}.s3.ap-south-1.amazonaws.com/${key}`;
+
+    return {
+        uploadUrl: presignedUrl,
+        publicUrl,
+        key,
+        bucket: S3_BUCKET
+    };
+};
+
+/**
+ * Upload file to S3 (server-side upload for small files)
  * @param {Object} file - File object from express-fileupload
  * @param {string} folder - Folder in S3 bucket (pdfs, videos, thumbnails)
  * @returns {Object} Upload result with URL
@@ -96,5 +127,6 @@ module.exports = {
     uploadFile,
     deleteFile,
     getPresignedUrl,
-    getKeyFromUrl
+    getKeyFromUrl,
+    getUploadPresignedUrl
 };

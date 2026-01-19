@@ -1,9 +1,49 @@
 const express = require('express');
 const router = express.Router();
-const { uploadFile, deleteFile, getKeyFromUrl } = require('../services/s3');
+const { uploadFile, deleteFile, getKeyFromUrl, getUploadPresignedUrl } = require('../services/s3');
+
+// @route   POST /api/upload/presigned
+// @desc    Get presigned URL for direct S3 upload
+// @access  Admin
+router.post('/presigned', async (req, res) => {
+    try {
+        const { fileName, fileType, folder } = req.body;
+
+        if (!fileName || !fileType || !folder) {
+            return res.status(400).json({
+                success: false,
+                message: 'fileName, fileType, and folder are required'
+            });
+        }
+
+        // Validate folder
+        const allowedFolders = ['pdfs', 'videos', 'thumbnails'];
+        if (!allowedFolders.includes(folder)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid folder. Must be pdfs, videos, or thumbnails'
+            });
+        }
+
+        const result = await getUploadPresignedUrl(fileName, folder, fileType);
+
+        res.json({
+            success: true,
+            message: 'Presigned URL generated',
+            data: result
+        });
+    } catch (error) {
+        console.error('Presigned URL error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate presigned URL',
+            error: error.message
+        });
+    }
+});
 
 // @route   POST /api/upload/pdf
-// @desc    Upload PDF to S3
+// @desc    Upload PDF to S3 (small files only)
 // @access  Admin
 router.post('/pdf', async (req, res) => {
     try {
@@ -47,7 +87,7 @@ router.post('/pdf', async (req, res) => {
 });
 
 // @route   POST /api/upload/video
-// @desc    Upload Video to S3
+// @desc    Upload Video to S3 (small files, use presigned for large)
 // @access  Admin
 router.post('/video', async (req, res) => {
     try {
