@@ -5,35 +5,20 @@ const fileUpload = require('express-fileupload');
 
 const app = express();
 
-// CORS configuration - Allow all origins for production
+// CORS configuration - Allow all origins
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        // Allow all origins - you can restrict this later
-        const allowedOrigins = [
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:3000',
-            'https://genii-learning-app.vercel.app',
-            'https://genii-admin.vercel.app',
-            'https://genii-backend.vercel.app',
-            process.env.FRONTEND_URL,
-            process.env.ADMIN_URL
-        ].filter(Boolean);
-
-        // Check if origin is allowed or allow all in development
-        if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-            callback(null, true);
-        } else {
-            callback(null, true); // Allow all for now
-        }
-    },
-    credentials: true,
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Handle OPTIONS preflight requests explicitly
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.sendStatus(200);
+});
 
 // Body parser - increased limits for large files
 app.use(express.json({ limit: '5000mb' }));
@@ -47,6 +32,7 @@ app.use(fileUpload({
     abortOnLimit: true,
     responseOnLimit: 'File size too large. Maximum 5GB allowed.'
 }));
+
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
