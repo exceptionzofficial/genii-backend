@@ -21,6 +21,8 @@ router.post('/', auth, async (req, res) => {
             packageType,
             amount,
             paymentMethod,
+            paymentStatus,
+            orderStatus,
             deliveryAddress
         } = req.body;
 
@@ -39,8 +41,8 @@ router.post('/', auth, async (req, res) => {
             packageType: packageType || '',
             amount: parseFloat(amount),
             paymentMethod: paymentMethod || 'online',
-            paymentStatus: 'pending',
-            orderStatus: 'pending',
+            paymentStatus: paymentStatus || 'pending', // Accept from request or default to pending
+            orderStatus: orderStatus || 'pending', // Accept from request or default to pending
             deliveryAddress: deliveryAddress || null,
             trackingId: null
         };
