@@ -149,11 +149,10 @@ router.post('/', async (req, res) => {
             fileUrl,
             thumbnailUrl,
             fileKey,
-            chapters,
-            pages,
-            lessons,
             duration,
             previewPages,
+            price,
+            isFree,
             status
         } = req.body;
 
@@ -179,6 +178,8 @@ router.post('/', async (req, res) => {
             lessons: parseInt(lessons) || 0,
             duration: duration || '',
             previewPages: parseInt(previewPages) || 5,
+            price: parseInt(price) || 0,
+            isFree: isFree === true || isFree === 'true',
             status: status || 'draft'
         };
 
@@ -217,7 +218,7 @@ router.put('/:id', async (req, res) => {
         const allowedFields = [
             'title', 'description', 'classId', 'board', 'subject',
             'fileUrl', 'thumbnailUrl', 'fileKey', 'chapters', 'pages',
-            'lessons', 'duration', 'previewPages', 'status'
+            'lessons', 'duration', 'previewPages', 'price', 'isFree', 'status'
         ];
 
         allowedFields.forEach(field => {
