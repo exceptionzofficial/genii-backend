@@ -35,7 +35,8 @@ const TABLES = {
     CONTENT: process.env.DYNAMODB_CONTENT_TABLE || 'genii-content',
     PRICING: process.env.DYNAMODB_PRICING_TABLE || 'genii-pricing',
     ORDERS: process.env.DYNAMODB_ORDERS_TABLE || 'genii-orders',
-    REVIEWS: process.env.DYNAMODB_REVIEWS_TABLE || 'genii-reviews'
+    REVIEWS: process.env.DYNAMODB_REVIEWS_TABLE || 'genii-reviews',
+    NOTIFICATIONS: process.env.DYNAMODB_NOTIFICATIONS_TABLE || 'genii-notifications'
 };
 
 // S3 Bucket

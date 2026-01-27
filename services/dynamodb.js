@@ -425,5 +425,56 @@ module.exports = {
     createReview,
     getAllReviews,
     deleteReview,
-    updateReview
+    updateReview,
+
+    // Notifications
+    createNotification,
+    getNotifications
 };
+
+// ==================== NOTIFICATIONS ====================
+
+async function createNotification(notificationData) {
+    const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const params = {
+        TableName: TABLES.NOTIFICATIONS,
+        Item: {
+            notificationId,
+            ...notificationData,
+            createdAt: new Date().toISOString()
+        }
+    };
+
+    await docClient.send(new PutCommand(params));
+    return params.Item;
+}
+
+async function getNotifications(filters = {}) {
+    const params = {
+        TableName: TABLES.NOTIFICATIONS
+    };
+
+    const result = await docClient.send(new ScanCommand(params));
+    let notifications = result.Items || [];
+
+    // Filter by class if provided
+    if (filters.classId) {
+        notifications = notifications.filter(n =>
+            n.targetClasses.includes('all') ||
+            n.targetClasses.includes(filters.classId)
+        );
+    }
+
+    // Filter by board if provided
+    if (filters.board && filters.board !== 'all') {
+        notifications = notifications.filter(n =>
+            n.targetBoard === 'all' ||
+            n.targetBoard === filters.board
+        );
+    }
+
+    // Sort by date descending
+    notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return notifications;
+}
