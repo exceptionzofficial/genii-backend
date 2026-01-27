@@ -324,6 +324,77 @@ const getOrdersByPhone = async (phone) => {
     return result.Items || [];
 };
 
+// ==================== REVIEWS ====================
+
+const createReview = async (reviewData) => {
+    const reviewId = `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const params = {
+        TableName: TABLES.REVIEWS,
+        Item: {
+            reviewId,
+            ...reviewData,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        }
+    };
+
+    await docClient.send(new PutCommand(params));
+    return params.Item;
+};
+
+const getAllReviews = async (filters = {}) => {
+    const params = {
+        TableName: TABLES.REVIEWS
+    };
+
+    const result = await docClient.send(new ScanCommand(params));
+    let reviews = result.Items || [];
+
+    // Sort by createdAt descending
+    reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return reviews;
+};
+
+const deleteReview = async (reviewId) => {
+    const params = {
+        TableName: TABLES.REVIEWS,
+        Key: { reviewId }
+    };
+
+    await docClient.send(new DeleteCommand(params));
+    return { success: true };
+};
+
+const updateReview = async (reviewId, updates) => {
+    const updateExpressions = [];
+    const expressionValues = {};
+    const expressionNames = {};
+
+    Object.keys(updates).forEach((key, index) => {
+        updateExpressions.push(`#field${index} = :value${index}`);
+        expressionValues[`:value${index}`] = updates[key];
+        expressionNames[`#field${index}`] = key;
+    });
+
+    expressionValues[':updatedAt'] = new Date().toISOString();
+    updateExpressions.push('#updatedAt = :updatedAt');
+    expressionNames['#updatedAt'] = 'updatedAt';
+
+    const params = {
+        TableName: TABLES.REVIEWS,
+        Key: { reviewId },
+        UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+        ExpressionAttributeValues: expressionValues,
+        ExpressionAttributeNames: expressionNames,
+        ReturnValues: 'ALL_NEW'
+    };
+
+    const result = await docClient.send(new UpdateCommand(params));
+    return result.Attributes;
+};
+
 module.exports = {
     // Users
     createUser,
@@ -348,5 +419,11 @@ module.exports = {
     getOrderById,
     updateOrder,
     getAllOrders,
-    getOrdersByPhone
+    getOrdersByPhone,
+
+    // Reviews
+    createReview,
+    getAllReviews,
+    deleteReview,
+    updateReview
 };
