@@ -5,7 +5,8 @@ const {
     getOrderById,
     updateOrder,
     getAllOrders,
-    getOrdersByPhone
+    getOrdersByPhone,
+    getOrdersByType
 } = require('../services/dynamodb');
 const auth = require('../middleware/auth');
 
@@ -44,7 +45,9 @@ router.post('/', auth, async (req, res) => {
             paymentStatus: paymentStatus || 'pending', // Accept from request or default to pending
             orderStatus: orderStatus || 'pending', // Accept from request or default to pending
             deliveryAddress: deliveryAddress || null,
-            trackingId: null
+            shippingAddress: req.body.shippingAddress || null, // For hard copy orders
+            trackingId: null,
+            trackingNumber: null
         };
 
         const order = await createOrder(orderData);
@@ -105,6 +108,34 @@ router.get('/admin', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to get orders',
+            error: error.message
+        });
+    }
+});
+
+// @route   GET /api/orders/hardcopy
+// @desc    Get all hard copy orders (admin)
+// @access  Admin
+router.get('/hardcopy', async (req, res) => {
+    try {
+        const { orderStatus } = req.query;
+        let orders = await getOrdersByType('hardcopy');
+
+        // Further filter by status if provided
+        if (orderStatus) {
+            orders = orders.filter(o => o.orderStatus === orderStatus);
+        }
+
+        res.json({
+            success: true,
+            count: orders.length,
+            data: orders
+        });
+    } catch (error) {
+        console.error('Get hardcopy orders error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get hard copy orders',
             error: error.message
         });
     }
@@ -209,6 +240,50 @@ router.put('/:id', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to update order',
+            error: error.message
+        });
+    }
+});
+
+// @route   PUT /api/orders/:id/status
+// @desc    Update hard copy order status and tracking
+// @access  Admin
+router.put('/:id/status', async (req, res) => {
+    try {
+        const { orderStatus, trackingNumber } = req.body;
+
+        const order = await getOrderById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        if (order.orderType !== 'hardcopy') {
+            return res.status(400).json({
+                success: false,
+                message: 'This endpoint is only for hard copy orders'
+            });
+        }
+
+        const updates = {};
+        if (orderStatus) updates.orderStatus = orderStatus;
+        if (trackingNumber) updates.trackingNumber = trackingNumber;
+
+        const updatedOrder = await updateOrder(req.params.id, updates);
+
+        res.json({
+            success: true,
+            message: 'Order status updated successfully',
+            data: updatedOrder
+        });
+    } catch (error) {
+        console.error('Update order status error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update order status',
             error: error.message
         });
     }

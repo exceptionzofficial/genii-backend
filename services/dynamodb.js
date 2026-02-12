@@ -237,6 +237,10 @@ const createOrder = async (orderData) => {
         Item: {
             orderId,
             ...orderData,
+            orderType: orderData.orderType || 'digital', // 'digital' or 'hardcopy'
+            orderStatus: orderData.orderStatus || 'pending', // 'pending', 'processing', 'shipped', 'delivered'
+            shippingAddress: orderData.shippingAddress || null, // For hard copy orders
+            trackingNumber: orderData.trackingNumber || null, // For shipped orders
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         }
@@ -322,6 +326,25 @@ const getOrdersByPhone = async (phone) => {
 
     const result = await docClient.send(new QueryCommand(params));
     return result.Items || [];
+};
+
+const getOrdersByType = async (orderType) => {
+    const params = {
+        TableName: TABLES.ORDERS
+    };
+
+    const result = await docClient.send(new ScanCommand(params));
+    let orders = result.Items || [];
+
+    // Filter by order type
+    if (orderType) {
+        orders = orders.filter(o => o.orderType === orderType);
+    }
+
+    // Sort by createdAt descending
+    orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return orders;
 };
 
 // ==================== REVIEWS ====================
@@ -420,6 +443,7 @@ module.exports = {
     updateOrder,
     getAllOrders,
     getOrdersByPhone,
+    getOrdersByType,
 
     // Reviews
     createReview,
