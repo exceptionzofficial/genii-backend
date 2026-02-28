@@ -156,7 +156,8 @@ router.post('/', async (req, res) => {
             previewPages,
             price,
             isFree,
-            status
+            status,
+            questions
         } = req.body;
 
         if (!title || !type || !classId || !subject) {
@@ -183,7 +184,8 @@ router.post('/', async (req, res) => {
             previewPages: parseInt(previewPages) || 5,
             price: parseInt(price) || 0,
             isFree: isFree === true || isFree === 'true',
-            status: status || 'draft'
+            status: status || 'draft',
+            questions: questions || []
         };
 
         const content = await createContent(contentData);
@@ -221,7 +223,7 @@ router.put('/:id', async (req, res) => {
         const allowedFields = [
             'title', 'description', 'classId', 'board', 'subject',
             'fileUrl', 'thumbnailUrl', 'fileKey', 'chapters', 'pages',
-            'lessons', 'duration', 'previewPages', 'price', 'isFree', 'status'
+            'lessons', 'duration', 'previewPages', 'price', 'isFree', 'status', 'questions'
         ];
 
         allowedFields.forEach(field => {
